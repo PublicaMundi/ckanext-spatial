@@ -23,7 +23,7 @@ def get_proxified_service_url(data_dict):
     log.info('Proxified url is {0}'.format(url))
     return url
 
-class PublicaMundiPreview(p.SingletonPlugin):
+class SpatialPublicaMundiPreview(p.SingletonPlugin):
     p.implements(p.IConfigurer, inherit=True)
     p.implements(p.IResourcePreview, inherit=True)
     p.implements(p.IRoutes, inherit=True)
