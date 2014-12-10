@@ -79,18 +79,19 @@
                     })),
 
                     loader: function(extent, resolution, proj) {
+                        
                         $.ajax({
                             type: "GET",
-                            //url: options.url+  '?service=WFS&request=GetFeature&typename='+options.name+'&srsname=EPSG:4326&outputFormat=json' +
                             url: options.url+  '?service=WFS&request=GetFeature&typename='+name+ '&srsname='+projection + '&outputFormat='+ output_format +  '&bbox=' + extent.join(',')+ ',EPSG:3857' +  maxFeatures + version,
-                            //'&maxFeatures=' + options.maxFeatures + '&version=' + version 
-                            //'&format_options=callback:loadFeatures',
-                            //dataType: 'jsonp',
-                            //dataType: 'json',
-                            //outputFormat: 'json',
-                            //dataType: 'xml',
-                            
-                            //context: this,
+                            async: true, 
+                            beforeSend: function(){
+                                console.log('loading...');
+                                //$('.loading-spinner').css({'display':'block'});
+                            },
+                            complete: function(){
+                                console.log('finished loading.');
+                                //$('.loading-spinner').css({'display':'none'});
+                            },
                             success: function(response) {
                                 loadFeatures(response);
                             },

@@ -108,12 +108,20 @@
                 
             });
 
-            $.ajax({                
+            $.ajax({       
                 type: "GET",
                 url: options.url,
                 dataType: 'json',
+                async: true, 
                 context: this,
+                beforeSend: function(){
+                    console.log('loading...');
+                },
+                complete: function(){
+                    console.log('finished loading.');
+                },
                 success: function (response) {
+                    console.log('succeeded');
                     this._layer.addData(response);
                     
                     // TODO: the following needs to be executed in fitToMap
@@ -124,8 +132,13 @@
                     this._extent = [southWest.lng, southWest.lat, northEast.lng, northEast.lat];
                     
                     //this._map.setExtent(this._extent, 'EPSG:4326');
-
+                },
+                
+                failure: function(response) {
+                    console.log('failed');
+                    console.log(response);
                 }
+
             });
             
             

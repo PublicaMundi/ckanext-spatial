@@ -51,19 +51,41 @@
             if (typeof options.bbox === "undefined"){                    
                     console.log('Getting Capabilities...');
                     var parser = new ol.format.WMSCapabilities();
-                    $.ajax(options.url+'?service=WMS&request=GetCapabilities').then(function(response) {
-                        response = parser.read(response);
-                        var candidates = response.Capability.Layer.Layer;
-                        $.each(candidates, function(idx, candidate){
-                            if (candidate.Name == options.params.layers){
-                                bbox = extractBbox(candidate.BoundingBox);
-                                layer._extent = bbox;
-                                layer._layer.once('postcompose', function() {
-                                        layer.getMap().setExtent(layer._extent, 'EPSG:4326');
-                                    });
-                                return false;
-                                }
-                         });
+                    $.ajax({       
+                        type: "GET",
+                        url: options.url+'?service=WMS&request=GetCapabilities',
+                        dataType: 'json',
+                        async: true, 
+                        context: this,
+                        beforeSend: function(){
+                            console.log('loading...');
+                            $('.loading-spinner').css({'display':'block'});
+                        },
+                        complete: function(){
+                            console.log('finished loading.');
+                            $('.loading-spinner').css({'display':'none'});
+                        },
+                        success: function (response) {
+                            console.log('succeeded');
+
+                            response = parser.read(response);
+                            var candidates = response.Capability.Layer.Layer;
+                            $.each(candidates, function(idx, candidate){
+                                if (candidate.Name == options.params.layers){
+                                    bbox = extractBbox(candidate.BoundingBox);
+                                    layer._extent = bbox;
+                                    layer._layer.once('postcompose', function() {
+                                            layer.getMap().setExtent(layer._extent, 'EPSG:4326');
+                                        });
+                                    return false;
+                                    }
+                            });
+                        },
+                        failure: function(response) {
+                            console.log('failed');
+                            console.log(response);
+                        }
+
                    });
             }
             else{

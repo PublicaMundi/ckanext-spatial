@@ -2,65 +2,87 @@ var $_ = _ // keep pointer to underscore, as '_' will be overridden by a closure
 
 
 this.ckan.module('olpreview2', function (jQuery, _) {
-
     var proxy = false;
-    var GEOSERVER_URL = "http://geoserver.dev.publicamundi.eu:8080/geoserver";
-    
-    
-    
-    
+    var GEOSERVER_URL = "http://labs.geodata.gov.gr/geoserver";
+    var GEOSERVER_URL_ALT = "http://geoserver.dev.publicamundi.eu:8080/geoserver";
+   
+     
     var parseWFSCapas = function(resource, url, callback, failCallback) {
-        
-        $.ajax(url+"?service=WFS&request=GetCapabilities").then(function(response) {
+        console.log(url);
+        //url = url.split('?')[0]
+        //var parsedUrl = resource.url.split('#')
+        //$.ajax(url+"?service=WFS&request=GetCapabilities").then(function(response) {
+         $.ajax({
+                type: "GET",
+                url: url+"?service=WFS&request=GetCapabilities",
+                async: true, 
+                beforeSend: function(){
+                    console.log('loading...');
+                    $('.loading-spinner').css({'display':'block'});
+                },
+                complete: function(){
+                    console.log('finished loading.');
+                    $('.loading-spinner').css({'display':'none'});
+                },
+                success: function(response) {
+                    console.log('succeeded');
             
-            response = xmlToJson(response);
-            console.log(response);
-            var candidates = response["wfs:WFS_Capabilities"]["FeatureTypeList"];
-            if (typeof candidates === "undefined") {
-                candidates = response["wfs:WFS_Capabilities"]["wfs:FeatureTypeList"]["wfs:FeatureType"];
-            }
-            else{ 
-                candidates = candidates["FeatureType"];
-            }
-            var version = response["wfs:WFS_Capabilities"]["@attributes"]["version"];
-            
-            var format_vals = response["wfs:WFS_Capabilities"]["ows:OperationsMetadata"]["ows:Operation"];
-           
-            // Check output formats
-            getValue(format_vals, "outputFormat");
-
-            var format;
-            if (outputFormat.indexOf('json') > -1 || outputFormat.indexOf('application/json') > -1){
-                format = 'json';
-            }
-            else if (version == '1.1.0'){
-                format = 'gml3';
-            }
-            else if (version == '1.0.0'){
-                format = 'gml2';
-            }
-
-
-            // In case the url shows to our geoserver look for the specific resource layer name (publicamundi:xxxxx)
-            if (resource.url.startsWith(GEOSERVER_URL)){
-                console.log('PublicaMundi GEOSERVER');
-                    var found = false;
-                    $_.each(candidates, function(candidate, idx) {
-                        if (candidate["Name"]["#text"] == resource.wfs_layer){
-                            candidates = candidate;
-                            found = true;
-                            return false;
-                        }
-                    });
-                    if (found == false){
-                        console.log('oops..layer not found, something wrong here...');
+                    response = xmlToJson(response);
+                    console.log(response);
+                    var candidates = response["wfs:WFS_Capabilities"]["FeatureTypeList"];
+                    if (typeof candidates === "undefined") {
+                        candidates = response["wfs:WFS_Capabilities"]["wfs:FeatureTypeList"]["wfs:FeatureType"];
                     }
+                    else{ 
+                        candidates = candidates["FeatureType"];
+                    }
+                    var version = response["wfs:WFS_Capabilities"]["@attributes"]["version"];
+                    
+                    var format_vals = response["wfs:WFS_Capabilities"]["ows:OperationsMetadata"]["ows:Operation"];
                 
-                };
+                    // Check output formats
+                    getValue(format_vals, "outputFormat");
 
-            callback(candidates, version, format);
+                    var format;
+                    // If json or application/json found in outputFormat then use that, else select gml based on version
+                    if (outputFormat.indexOf('json') > -1 || outputFormat.indexOf('application/json') > -1){
+                        format = 'json';
+                    }
+                    else if (version == '1.1.0'){
+                        format = 'gml3';
+                    }
+                    else if (version == '1.0.0'){
+                        format = 'gml2';
+                    }
 
-        });
+
+                    // In case the url shows to our geoserver look for the specific resource layer name (publicamundi:xxxxx)
+                    if (resource.url.startsWith(GEOSERVER_URL) || resource.url.startsWith(GEOSERVER_URL_ALT)){
+                        console.log('PublicaMundi GEOSERVER');
+                            var found = false;
+                            $_.each(candidates, function(candidate, idx) {
+                                if (candidate["Name"]["#text"] == resource.wfs_layer){
+                                    candidates = candidate;
+                                    found = true;
+                                    return false;
+                                }
+                            });
+                            if (found == false){
+                                console.log('oops..layer not found, something wrong here...');
+                            }
+                        
+                        };
+
+                    callback(candidates, version, format);
+                },
+
+                failure: function(response) {
+                    console.log('failed');
+                    console.log(response);
+                }
+            
+         });
+
 
     }
 
@@ -70,7 +92,6 @@ this.ckan.module('olpreview2', function (jQuery, _) {
         
         var parsedUrl = resource.url.split('#')
         var url = resource.proxy_service_url || parsedUrl[0]
-
         var ftName = parsedUrl.length>1 && parsedUrl[1]
 
         parseWFSCapas(
@@ -80,53 +101,51 @@ this.ckan.module('olpreview2', function (jQuery, _) {
                 var count = candidates.length;
 
                 $_.each(candidates, function(candidate, idx) {
-
-                    var title = candidate["Title"];
-                    if (typeof title === "undefined") {
-                        title = candidate["wfs:Title"];
-                    }
-                    title = title["#text"];
+                    
                     
                     var name = candidate["Name"];
                     if (typeof name === "undefined") {
                         name = candidate["wfs:Name"];
                     }
                     name = name["#text"];
-                    
-                    var bbox = candidate["WGS84BoundingBox"];
-                    var lc = null;
-                    var uc = null;
-                    if (typeof bbox === "undefined") {
-                        bbox = candidate["ows:WGS84BoundingBox"];
-                        lc = bbox['ows:LowerCorner']["#text"];
-                        uc = bbox['ows:UpperCorner']["#text"];
+                        
+                    var title = resource.name;
+                    if (candidate["Title"]){
+                        title = candidate["Title"]["#text"];
                     }
-                    else {
-                        lc = bbox['LowerCorner']["#text"];
-                        uc = bbox['UpperCorner']["#text"];
+                    else if (candidate["wfs:Title"]){
+                        title = candidate["wfs:Title"]["#text"];
                     }
                     
-                    if (typeof bbox !== "undefined") {
+                    var bbox = null;
+                    var bboxfloat = null;
+                    if (candidate["WGS84BoundingBox"]){
+                        bbox = candidate["WGS84BoundingBox"];
+                        var lc = bbox['LowerCorner']["#text"];
+                        var uc = bbox['UpperCorner']["#text"];
+                        
                         lc = lc.split(' ');
                         uc = uc.split(' ');
                         bboxfloat = [ parseFloat(lc[0]), parseFloat(lc[1]), parseFloat(uc[0]), parseFloat(uc[1]) ];
                     }
-
-                var crs = null;
-                if (candidate["DefaultCRS"]){
-                    var crs_raw = candidate["DefaultCRS"]["#text"];
-                    var crs_arr = crs_raw.split(":");
-                    crs = crs_arr[crs_arr.length-3]+":"+crs_arr[crs_arr.length-1];
-                }
-               // moved this to api
-                // if ( crs == 'EPSG:26713'){
-               //     crs = 'EPSG:3857';
-               // }
-               // else if ( crs == 'EPSG:900913'){
-               //     crs = 'EPSG:3857';
-               // }
-
-                var visibility = false;
+                    else if (candidate["ows:WGS84BoundingBox"]){
+                            bbox = candidate["ows:WGS84BoundingBox"];
+                            var lc = bbox['ows:LowerCorner']["#text"];
+                            var uc = bbox['ows:UpperCorner']["#text"];
+                            
+                            lc = lc.split(' ');
+                            uc = uc.split(' ');
+                            bboxfloat = [ parseFloat(lc[0]), parseFloat(lc[1]), parseFloat(uc[0]), parseFloat(uc[1]) ];
+                    }
+                    
+                    var crs = null;
+                    if (candidate["DefaultCRS"]){
+                        var crs_raw = candidate["DefaultCRS"]["#text"];
+                        var crs_arr = crs_raw.split(":");
+                        crs = crs_arr[crs_arr.length-3]+":"+crs_arr[crs_arr.length-1];
+                    }
+                    
+                    var visibility = false;
                 // If only 1 layer available then make it visible on load
                 if (count == 1){
                     visibility = true;
@@ -167,28 +186,52 @@ this.ckan.module('olpreview2', function (jQuery, _) {
         //TODO: implement without using ol.format (see WFS parsing)
         var parser = new ol.format.WMSCapabilities();
         
-        $.ajax(url+"?service=WMS&request=GetCapabilities").then(function(response) {
-            var response = parser.read(response);
-            console.log(response);
-            var version = response["version"];
-            var candidates = response["Capability"]["Layer"]["Layer"];
-            
-            if (resource.url.startsWith(GEOSERVER_URL)){
-                console.log('PublicaMundi GEOSERVER');
-                    var found = false;
-                    $_.each(candidates, function(candidate, idx) {
-                        if (candidate["Name"] == resource.wms_layer){
-                            candidates = candidate;
-                            found = true;
-                            return false;
-                        }
-                    });
-                    if (found == false){
-                        console.log('oops..layer not found, something wrong here...');
-                    }
-                };
+        console.log(url);
+        
+        $.ajax({
+                type: "GET",
+                url: url+"?service=WMS&request=GetCapabilities",
+                async: true, 
+                beforeSend: function(){
+                    console.log('loading...');
+                    $('.loading-spinner').css({'display':'block'});
+                },
+                complete: function(){
+                    console.log('finished loading.');
+                    $('.loading-spinner').css({'display':'none'});
 
-            callback(candidates, version);
+                },
+                success: function(response) {
+                    console.log('succeeded');
+
+                    var response = parser.read(response);
+                    //console.log(response);
+                    var version = response["version"];
+                    var candidates = response["Capability"]["Layer"]["Layer"];
+                    
+                    if (resource.url.startsWith(GEOSERVER_URL) || resource.url.startsWith(GEOSERVER_URL_ALT)){
+                        console.log('PublicaMundi GEOSERVER');
+                            var found = false;
+                            $_.each(candidates, function(candidate, idx) {
+                                if (candidate["Name"] == resource.wms_layer){
+                                    candidates = candidate;
+                                    found = true;
+                                    return false;
+                                }
+                            });
+                            if (found == false){
+                                console.log('oops..layer not found, something wrong here...');
+                            }
+                        };
+
+                    callback(candidates, version);
+                },
+
+                failure: function(response) {
+                    console.log('failed');
+                    console.log(response);
+                }
+
 
         });
     }
@@ -209,9 +252,18 @@ this.ckan.module('olpreview2', function (jQuery, _) {
 
                     // Parse each WMS layer found
                     $_.each(candidates, function(candidate, idx) {
-                        var title = candidate["Title"];
+                        
                         var name = candidate["Name"];
-                        var bbox = candidate["BoundingBox"];
+                        var title = resource.name;
+                        if(candidate["Title"]){
+                            title = candidate["Title"];
+                        }
+                        var bbox = null;
+                        var bboxfloat = null;
+                        if (candidate["BoundingBox"]){
+                            bbox = candidate["BoundingBox"];
+                            bboxfloat = extractBbox(bbox);
+                        }
 
                         var visibility = false;
                         // If only 1 layer available then make it visible on load
@@ -224,7 +276,6 @@ this.ckan.module('olpreview2', function (jQuery, _) {
                             visibility = true;
                         }
                        
-                        var bboxfloat = extractBbox(bbox);
                         var mapLayer = {
                             type: PublicaMundi.LayerType.WMS,
                             url: urlBody, // use the original URL for the getMap, as there's no need for a proxy for image request
@@ -424,6 +475,8 @@ this.ckan.module('olpreview2', function (jQuery, _) {
         },
 
         _onReady: function () {
+
+            $('.loading-spinner').css({'display':'none'});
 
             var mapDiv = $("<div></div>").attr("id", "map-ol").addClass("map")
             popup = $("<div></div>").attr("id", "popup")

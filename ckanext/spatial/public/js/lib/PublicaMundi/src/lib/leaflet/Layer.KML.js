@@ -103,16 +103,22 @@
                     }
                 },
          
+            });
             
-               async: true,
-                    });
-
-            $.ajax({
+            $.ajax({       
                 type: "GET",
                 url: options.url,
                 dataType: 'xml',
+                async: true, 
                 context: this,
+                beforeSend: function(){
+                    console.log('loading...');
+                },
+                complete: function(){
+                    console.log('finished loading.');
+                },
                 success: function (response) {
+                    console.log('succeeded');
                     // Converting KML to geojson and handling as json
                     var test = toGeoJSON.kml(response);
                     this._layer.addData(test);
@@ -127,7 +133,12 @@
                     //this._map.setExtent(this._extent, 'EPSG:4326');
 
 
+                },
+                failure: function(response) {
+                    console.log('failed');
+                    console.log(response);
                 }
+
             });
         }
     });

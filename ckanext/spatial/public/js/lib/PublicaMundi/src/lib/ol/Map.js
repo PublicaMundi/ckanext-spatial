@@ -141,37 +141,25 @@
                     this._clickHandlerMap = function (e) {
                         var pixel = this._map.getEventPixel(e.originalEvent);
                         var features = [];
-                        console.log('map click');
+                        
                         if (map._highlight){
                             featureOverlay.removeFeature(map._highlight);
                             map._highlight = undefined;
                         }
                         var processFeature = function (feature, layer) {
                             if ((layer === layers[l].getLayer()) && (layer.get("visible") === true)) {
-                                console.log('feat');
-                                console.log(feature);
-                                console.log('highlight');
-                                console.log(map._highlight);
                                 if (map._highlight){
                                     if (map._highlight !== feature){
-                                        console.log('found other');
                                         featureOverlay.removeFeature(map._highlight);
                                         map._highlight = feature;
                                         featureOverlay.addFeature(feature);
                                     }
-                                    else{
-                                        console.log('found the same');
-                                    }
                                 }
                                 else{
-                                    console.log('found none');
                                     map._highlight = feature;
                                     featureOverlay.addFeature(feature);
                                 }
                                 
-
-                                console.log(featureOverlay);
-
                                 var properties = {};
                                 var keys = feature.getKeys();
                                 var geometryName = feature.getGeometryName();

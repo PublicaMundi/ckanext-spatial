@@ -6,12 +6,14 @@ import requests
 import ckan.logic as logic
 import ckan.lib.base as base
 
+from ckan.common import request
+
 log = getLogger(__name__)
 
 MAX_FILE_SIZE = 3 * 1024 * 1024  # 1MB
 CHUNK_SIZE = 512
 
-def proxy_service(self, context, data_dict):
+def proxy_service(req, context, data_dict):
     ''' Chunked proxy for resources. To make sure that the file is not too
     large, first, we try to get the content length from the headers.
     If the headers to not contain a content length (if it is a chinked
@@ -22,23 +24,28 @@ def proxy_service(self, context, data_dict):
     resource = logic.get_action('resource_show')(context, {'id': resource_id})
     url = resource['url']
 
+    # If any case where params are needed arises, use 'ignore_params' parameter
+    #if 'ignore_params' in request.params:
+
+    # Splitting initial resource url to separate query parameters
     parts = urlparse.urlsplit(url)
+
+    # TODO: Need to check cases where query needed in preview
+    internal_url = parts.scheme+'://' + parts.netloc + parts.path
+
     if not parts.scheme or not parts.netloc:
         base.abort(409, detail='Invalid URL.')
 
     try:
-        req = self._py_object.request
         method = req.environ["REQUEST_METHOD"]
-
-        url = url.split('#')[0] # remove potential fragment
 
         if method == "POST":
             length = int(req.environ["CONTENT_LENGTH"])
             headers = {"Content-Type": req.environ["CONTENT_TYPE"]}
             body = req.body
-            r = requests.post(url, data=body, headers=headers, stream=True)
+            r = requests.post(internal_url, data=body, headers=headers, stream=True)
         else:
-            r = requests.get(url, params=req.query_string, stream=True)
+            r = requests.get(internal_url, params=req.query_string, stream=True)
 
         #log.info('Request: {req}'.format(req=r.request.url))
         #log.info('Request Headers: {h}'.format(h=r.request.headers))
@@ -79,4 +86,4 @@ class ServiceProxyController(base.BaseController):
         data_dict = {'resource_id': resource_id}
         context = {'model': base.model, 'session': base.model.Session,
                    'user': base.c.user or base.c.author}
-        return proxy_service(self, context, data_dict)
+        return proxy_service(request, context, data_dict)

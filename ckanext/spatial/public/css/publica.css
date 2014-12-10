@@ -119,3 +119,15 @@ body{
  #data-preview1 .dataLayersDiv .labelSpan, #data-preview2 .dataLayersDiv .labelSpan {
      font-size: 80%;
  }
+ .loading-spinner{
+    background: url('../img/ajax-loader.gif');
+    //background-color: #fff;
+    background-repeat:no-repeat;
+    height:38px;
+    width:33px;
+    position:relative;
+    top:200px;
+    left:50%;
+
+}
+
