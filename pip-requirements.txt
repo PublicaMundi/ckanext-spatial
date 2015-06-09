@@ -1,7 +1,7 @@
 GeoAlchemy>=0.6
 Shapely>=1.2.13
-OWSLib>=0.8.10
 lxml>=2.3
 argparse
 pyparsing==1.5.6
 requests==1.1.0
+-e git+https://github.com/PublicaMundi/owslib.git@dev.publicamundi.eu#egg=owslib
