@@ -597,7 +597,10 @@ this.ckan.module('olpreview2', function (jQuery, _) {
        // },
 
         initialize: function () {
+            console.log('lola this is a');
+            console.log(this);
             jQuery.proxyAll(this, /_on/);
+
             this.el.ready(this._onReady);
         },
 
@@ -655,7 +658,8 @@ this.ckan.module('olpreview2', function (jQuery, _) {
                $(document.getElementById('map-ol')).click(function() {
                     $(document.getElementById('popup')).popover('destroy');
             });
-            
+            console.log('prel resource');
+            console.log(preload_resource);
             withLayers(preload_resource, $_.bind(this.addLayer, this))
         }
     }
