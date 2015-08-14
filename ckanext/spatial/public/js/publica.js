@@ -1,8 +1,11 @@
 var $_ = _ // keep pointer to underscore, as '_' will be overridden by a closure variable when down the stack
 
-
-this.ckan.module('olpreview2', function (jQuery, _) {
+this.ckan.module('olpreview2', function (jQuery, _) 
+{
     var proxy = false;
+   
+    // Fixme Why are these URLs hardcoded ?? 
+
     var GEOSERVER_URL = "http://labs.geodata.gov.gr/geoserver";
     var GEOSERVER_URL_ALT = "http://geoserver.dev.publicamundi.eu:8080/geoserver";
     var RASDAMAN_URL = "http://labs.geodata.gov.gr/rasdaman/ows/wms13"; 
@@ -10,14 +13,13 @@ this.ckan.module('olpreview2', function (jQuery, _) {
     var KTIMA_URL = "http://gis.ktimanet.gr/wms";
     
 
-    var parseWFSCapas = function(resource, url, callback, failCallback) {
-        console.log(url);
-        //url = url.split('?')[0]
-        //var parsedUrl = resource.url.split('#')
-        //$.ajax(url+"?service=WFS&request=GetCapabilities").then(function(response) {
+    var parseWFSCapas = function(resource, url, callback, failCallback) 
+    {
+         // The input URL is supposed to be in it's canonical form, i.e. it should be a valid 
+         // GetCapabilities WFS request.
          $.ajax({
                 type: "GET",
-                url: url+"?service=WFS&request=GetCapabilities",
+                url: url,
                 async: true, 
                 beforeSend: function(){
                     console.log('loading...');
@@ -116,20 +118,21 @@ this.ckan.module('olpreview2', function (jQuery, _) {
 
     }
 
-    var withFeatureTypesLayers = function (resource, layerProcessor) {
+    var withFeatureTypesLayers = function (resource, layerProcessor) 
+    {
         console.log('wfs');
         console.log(resource);
         
-        var parsedUrl = resource.url.split('#')
-        var url = resource.proxy_service_url || parsedUrl[0]
-        var ftName = parsedUrl.length>1 && parsedUrl[1]
+        var parsed_url = resource.url.split('#')
+        var url_body = parsed_url[0].split('?')[0] // remove query if any
+        var url = resource.proxy_service_url || parsed_url[0]
+        var ftName = parsed_url.length > 1 && parsed_url[1]
 
         parseWFSCapas(
             resource,
             url,
             function(candidates, version, format) {
                 var count = candidates.length;
-                console.log(count);
 
                 $_.each(candidates, function(candidate, idx) {
                     
@@ -199,34 +202,35 @@ this.ckan.module('olpreview2', function (jQuery, _) {
                         visible: visibility,
                         type: PublicaMundi.LayerType.WFS,
                         click: onFeatureClick,
-                        url: url,
+                        url: url_body,
                         bbox: bboxfloat,
                         params: { 
-                                'format': format,
-                                'version': version,
-                                'layers': name, 
-                                //'projection': crs,
-                                //'maxFeatures': '10',
+                            'format': format,
+                            'version': version,
+                            'layers': name, 
+                            //'projection': crs,
+                            //'maxFeatures': '10',
                         } 
                     };
                 
                     layerProcessor(ftLayer)
             
-                    })
+                })
         
              })
-}
+    }
 
-    var parseWMSCapas = function(resource, url, callback, failCallback) {
+    var parseWMSCapas = function(resource, url, callback, failCallback) 
+    {
        
         //TODO: implement without using ol.format (see WFS parsing)
         var parser = new ol.format.WMSCapabilities();
         
-        console.log(url);
-        
+        // The input URL is supposed to be in it's canonical form, i.e. it should be a valid 
+        // GetCapabilities WMS request.
         $.ajax({
                 type: "GET",
-                url: url+"?service=WMS&request=GetCapabilities",
+                url: url,
                 async: true, 
                 beforeSend: function(){
                     console.log('loading...');
@@ -293,7 +297,6 @@ this.ckan.module('olpreview2', function (jQuery, _) {
                     }
                     var zoomin=false;
 
-
                     if (resource.url.startsWith(RASDAMAN_URL) || resource.url.startsWith(RASDAMAN_URL_ALT)){
                         zoomin = true;
                     }
@@ -326,19 +329,17 @@ this.ckan.module('olpreview2', function (jQuery, _) {
 
     var withWMSLayers = function (resource, layerProcessor) {
         
-        var parsedUrl = resource.url.split('#')
-        var urlBody = parsedUrl[0].split('?')[0] // remove query if any
-        var url = resource.proxy_service_url
+        var parsed_url = resource.url.split('#')
+        var url_body = parsed_url[0].split('?')[0] // remove query if any
+        var url = resource.proxy_service_url || parsed_url[0]
 
-        var url = resource.proxy_service_url || parsedUrl[0]
-
-        var layerName = parsedUrl.length>1 && parsedUrl[1]
+        var layerName = parsed_url.length > 1 && parsed_url[1]
       
         parseWMSCapas(
             resource,
             url,
             function(candidates, version, zoomin) {
-                var count = candidates.length;
+                var count_candidates = candidates.length;
 
                     // Parse each WMS layer found
                     $_.each(candidates, function(candidate, idx) {
@@ -387,7 +388,7 @@ this.ckan.module('olpreview2', function (jQuery, _) {
                         var visibility = false;
                         
                         // If only 1 layer available then make it visible on load
-                        if (count == 1){
+                        if (count_candidates == 1){
                             visibility = true;
                         }
                     
@@ -398,7 +399,7 @@ this.ckan.module('olpreview2', function (jQuery, _) {
                        
                         var mapLayer = {
                             type: PublicaMundi.LayerType.WMS,
-                            url: urlBody, // use the original URL for the getMap, as there's no need for a proxy for image request
+                            url: url_body, // use the original URL for the getMap, as there's no need for a proxy for image request
                             name: name,
                             title: title,
                             bbox: bboxfloat,
