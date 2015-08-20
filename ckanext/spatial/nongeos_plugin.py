@@ -1,12 +1,12 @@
 import mimetypes, urlparse, os
 from logging import getLogger
 
-from ckan import plugins as p
-import ckan.lib.helpers as h
-import ckan.lib.datapreview as datapreview
 import pylons.config as config
 
+from ckan import plugins as p
+import ckan.lib.helpers as h
 from ckan.common import request
+from ckan.lib.datapreview import compare_domains
 
 log = getLogger(__name__)
 
@@ -16,8 +16,6 @@ def get_proxified_service_url(data_dict):
     :param data_dict: contains a resource and package dict
     :type data_dict: dictionary
     '''
-    print 'PROXIFYING'
-
     url = h.url_for(
         action='proxy_service',
         controller='ckanext.spatial.controllers.service_proxy:ServiceProxyController',
@@ -30,7 +28,6 @@ def get_proxified_service_url(data_dict):
 class SpatialPublicaMundiPreview(p.SingletonPlugin):
     p.implements(p.IConfigurer, inherit=True)
     p.implements(p.IResourcePreview, inherit=True)
-    #p.implements(p.IResourceView, inherit=True)
     p.implements(p.IRoutes, inherit=True)
     p.implements(p.IPackageController, inherit=True)
 
@@ -50,19 +47,19 @@ class SpatialPublicaMundiPreview(p.SingletonPlugin):
         p.toolkit.c.gapi_key = h.config.get('ckanext.spatial.gapi.key')
 
         proxy_enabled = p.plugin_loaded('resource_proxy')
-        same_domain = datapreview.on_same_domain(data_dict)
+        
+        resource_url = data_dict['resource']['url']
+        same_domain = compare_domains((config.get('ckan.site_url'), resource_url))
 
         if proxy_enabled and not same_domain:
             data_dict['resource']['proxy_url'] = proxy.get_proxified_resource_url(data_dict)
             data_dict['resource']['proxy_service_url'] = get_proxified_service_url(data_dict)
         else:
-            data_dict['resource']['proxy_url'] = data_dict['resource']['url']
+            data_dict['resource']['proxy_url'] = resource_url
         return data_dict
 
     def add_default_views(self, context, data_dict):
         #resources = p.toolkit.get_new_resources(context, data_dict)
-        #print 'res!!!'
-        #print resources
         #for resource in resources:
         #    if resource.get('format') in FORMATS:
         #d_v = config.get('ckan.view.default_views',[])
@@ -113,7 +110,7 @@ class SpatialPublicaMundiPreview(p.SingletonPlugin):
                 return {'can_preview': False, 'quality': quality}
         return correct_format and can_preview_from_domain
 
-    def view_template(self, context, data_dict):
+    def preview_template(self, context, data_dict):
             return 'dataviewer/publica.html'
 
     def after_update(self, context, data_dict):
