@@ -3,13 +3,8 @@ var $_ = _ // keep pointer to underscore, as '_' will be overridden by a closure
 this.ckan.module('olpreview2', function (jQuery, _) 
 {
     var proxy = false;
-   
-    // Fixme Why are these URLs hardcoded ?? 
-
-    var GEOSERVER_URL = "http://labs.geodata.gov.gr/geoserver";
-    var GEOSERVER_URL_ALT = "http://geoserver.dev.publicamundi.eu:8080/geoserver";
-    var RASDAMAN_URL = "http://labs.geodata.gov.gr/rasdaman/ows/wms13"; 
-    var RASDAMAN_URL_ALT = "http://rasdaman.dev.publicamundi.eu:8080/rasdaman/ows/wms13"; 
+    var GEOSERVER_URL = "/geoserver";
+    var RASDAMAN_URL = "/rasdaman/ows/wms13"; 
     var KTIMA_URL = "http://gis.ktimanet.gr/wms";
     
 
@@ -89,7 +84,7 @@ this.ckan.module('olpreview2', function (jQuery, _)
 
 
                     // In case the url shows to our geoserver look for the specific resource layer name (publicamundi:xxxxx)
-                    if (resource.url.startsWith(GEOSERVER_URL) || resource.url.startsWith(GEOSERVER_URL_ALT)){
+                    if (resource.url.startsWith(GEOSERVER_URL)){
                         console.log('PublicaMundi GEOSERVER');
                             var found = false;
                             $_.each(candidates, function(candidate, idx) {
@@ -297,10 +292,10 @@ this.ckan.module('olpreview2', function (jQuery, _)
                     }
                     var zoomin=false;
 
-                    if (resource.url.startsWith(RASDAMAN_URL) || resource.url.startsWith(RASDAMAN_URL_ALT)){
+                    if (resource.url.startsWith(RASDAMAN_URL)){
                         zoomin = true;
                     }
-                    if (resource.url.startsWith(GEOSERVER_URL) || resource.url.startsWith(GEOSERVER_URL_ALT) || resource.url.startsWith(RASDAMAN_URL) || resource.url.startsWith(RASDAMAN_URL_ALT)){
+                    if (resource.url.startsWith(GEOSERVER_URL) || resource.url.startsWith(RASDAMAN_URL)){
                         console.log('PublicaMundi GEOSERVER/Rasdaman server');
                             var found = false;
                             $_.each(candidates, function(candidate, idx) {
@@ -598,7 +593,10 @@ this.ckan.module('olpreview2', function (jQuery, _)
        // },
 
         initialize: function () {
+            console.log('lola this is a');
+            console.log(this);
             jQuery.proxyAll(this, /_on/);
+
             this.el.ready(this._onReady);
         },
 
@@ -656,7 +654,8 @@ this.ckan.module('olpreview2', function (jQuery, _)
                $(document.getElementById('map-ol')).click(function() {
                     $(document.getElementById('popup')).popover('destroy');
             });
-            
+            console.log('prel resource');
+            console.log(preload_resource);
             withLayers(preload_resource, $_.bind(this.addLayer, this))
         }
     }

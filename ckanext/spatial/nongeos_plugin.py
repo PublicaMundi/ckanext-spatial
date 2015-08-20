@@ -3,6 +3,8 @@ from logging import getLogger
 
 from ckan import plugins as p
 import ckan.lib.helpers as h
+import ckan.lib.datapreview as datapreview
+import pylons.config as config
 
 from ckan.common import request
 
@@ -28,7 +30,9 @@ def get_proxified_service_url(data_dict):
 class SpatialPublicaMundiPreview(p.SingletonPlugin):
     p.implements(p.IConfigurer, inherit=True)
     p.implements(p.IResourcePreview, inherit=True)
+    #p.implements(p.IResourceView, inherit=True)
     p.implements(p.IRoutes, inherit=True)
+    p.implements(p.IPackageController, inherit=True)
 
     #FORMATS = ['kml','geojson','gml','wms','wfs','shp', 'esrigeojson', 'gft', 'arcgis_rest']
     FORMATS = ['kml','geojson','wms','wfs']
@@ -45,12 +49,42 @@ class SpatialPublicaMundiPreview(p.SingletonPlugin):
 
         p.toolkit.c.gapi_key = h.config.get('ckanext.spatial.gapi.key')
 
-        if self.proxy_enabled and not data_dict['resource']['on_same_domain']:
-            p.toolkit.c.resource['proxy_url'] = proxy.get_proxified_resource_url(data_dict)
-            p.toolkit.c.resource['proxy_service_url'] = get_proxified_service_url(data_dict)
-        else:
-            p.toolkit.c.resource['proxy_url'] = data_dict['resource']['url']
+        proxy_enabled = p.plugin_loaded('resource_proxy')
+        same_domain = datapreview.on_same_domain(data_dict)
 
+        if proxy_enabled and not same_domain:
+            data_dict['resource']['proxy_url'] = proxy.get_proxified_resource_url(data_dict)
+            data_dict['resource']['proxy_service_url'] = get_proxified_service_url(data_dict)
+        else:
+            data_dict['resource']['proxy_url'] = data_dict['resource']['url']
+        return data_dict
+
+    def add_default_views(self, context, data_dict):
+        #resources = p.toolkit.get_new_resources(context, data_dict)
+        #print 'res!!!'
+        #print resources
+        #for resource in resources:
+        #    if resource.get('format') in FORMATS:
+        #d_v = config.get('ckan.view.default_views',[])
+        d_v = []
+        for v in d_v:
+            if data_dict['resource']['format'] in FORMATS and v.can_view(data_dict['resource']):
+                view = {'title': 'Map',
+                        'description': 'View created with PublicaMundi API',
+                        'resource_id': resource['id'],
+                        'view_type': 'map',
+                        }
+                p.toolkit.get_action('resource_view_create')(
+                        {'defer_commit': True}, view)
+
+    def info(self):
+        return {'name': 'publicamundi_spatial',
+                'title': 'PublicaMundi Spatial',
+                'icon': 'globe',
+                'default_title': 'PublicaMundi Spatial',
+                }
+
+    #def can_view(self, data_dict):
     def can_preview(self, data_dict):
         format_lower = data_dict['resource']['format'].lower()
         
@@ -60,6 +94,10 @@ class SpatialPublicaMundiPreview(p.SingletonPlugin):
             parsedUrl = urlparse.urlparse(data_dict['resource']['url'])
             format_lower = os.path.splitext(parsedUrl.path)[1][1:].encode('ascii','ignore').lower()
         correct_format = format_lower in self.FORMATS
+        #proxy_enabled = p.plugin_loaded('resource_proxy')
+        #same_domain = datapreview.on_same_domain(data_dict)
+
+        #can_preview_from_domain = proxy_enabled or same_domain
         can_preview_from_domain = self.proxy_enabled or data_dict['resource']['on_same_domain']
         quality = 2
 
@@ -75,8 +113,12 @@ class SpatialPublicaMundiPreview(p.SingletonPlugin):
                 return {'can_preview': False, 'quality': quality}
         return correct_format and can_preview_from_domain
 
-    def preview_template(self, context, data_dict):
+    def view_template(self, context, data_dict):
             return 'dataviewer/publica.html'
+
+    def after_update(self, context, data_dict):
+        #self.add_default_views(context, data_dict)
+        pass
 
     def before_map(self, m):
         m.connect('/dataset/{id}/resource/{resource_id}/service_proxy/',
