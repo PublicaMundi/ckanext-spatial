@@ -3,8 +3,8 @@ var $_ = _ // keep pointer to underscore, as '_' will be overridden by a closure
 this.ckan.module('olpreview2', function (jQuery, _) 
 {
     var proxy = false;
-    var GEOSERVER_URL = "/geoserver";
-    var RASDAMAN_URL = "/rasdaman/ows/wms13"; 
+    //var GEOSERVER_URL = "/geoserver";
+    //var RASDAMAN_URL = "/rasdaman/ows/wms13"; 
     var KTIMA_URL = "http://gis.ktimanet.gr/wms";
     
 
@@ -12,6 +12,12 @@ this.ckan.module('olpreview2', function (jQuery, _)
     {
          // The input URL is supposed to be in it's canonical form, i.e. it should be a valid 
          // GetCapabilities WFS request.
+        
+         // if url is not on the same domain, proxy is used, so GetCapabilities parameters need to be added
+        if (!resource.on_same_domain && resource.proxy_url){
+            url += '?service=WFS&request=GetCapabilities';
+        }
+
          $.ajax({
                 type: "GET",
                 url: url,
@@ -84,7 +90,10 @@ this.ckan.module('olpreview2', function (jQuery, _)
 
 
                     // In case the url shows to our geoserver look for the specific resource layer name (publicamundi:xxxxx)
-                    if (resource.url.startsWith(GEOSERVER_URL)){
+                    console.log('wfsserver');
+                    console.log(resource.wfs_server);
+                    if (resource.wfs_server){
+                    //if (resource.url.startsWith(GEOSERVER_URL)){
                         console.log('PublicaMundi GEOSERVER');
                             var found = false;
                             $_.each(candidates, function(candidate, idx) {
@@ -115,8 +124,6 @@ this.ckan.module('olpreview2', function (jQuery, _)
 
     var withFeatureTypesLayers = function (resource, layerProcessor) 
     {
-        console.log('wfs');
-        console.log(resource);
         
         var parsed_url = resource.url.split('#')
         var url_body = parsed_url[0].split('?')[0] // remove query if any
@@ -139,7 +146,7 @@ this.ckan.module('olpreview2', function (jQuery, _)
                         name = candidate["wfs:Name"]["#text"];
                     }
                     else{
-                        alert("Layer has no name attribute. Cannot display");
+                        console.log("Layer has no name attribute. Cannot display");
                         return false;
                     }
                         
@@ -220,7 +227,10 @@ this.ckan.module('olpreview2', function (jQuery, _)
        
         //TODO: implement without using ol.format (see WFS parsing)
         var parser = new ol.format.WMSCapabilities();
-        
+        // if url is not on the same domain, proxy is used, so GetCapabilities parameters need to be added
+        if (!resource.on_same_domain && resource.proxy_url){
+            url += '?service=WMS&request=GetCapabilities';
+        }
         // The input URL is supposed to be in it's canonical form, i.e. it should be a valid 
         // GetCapabilities WMS request.
         $.ajax({
@@ -292,10 +302,16 @@ this.ckan.module('olpreview2', function (jQuery, _)
                     }
                     var zoomin=false;
 
-                    if (resource.url.startsWith(RASDAMAN_URL)){
+                    //if (resource.url.startsWith(RASDAMAN_URL)){
+                    //if (resource.url.contains(RASDAMAN_URL)){
+                    if (resource.rasterstorer_resource && resource.wms_server){
                         zoomin = true;
                     }
-                    if (resource.url.startsWith(GEOSERVER_URL) || resource.url.startsWith(RASDAMAN_URL)){
+
+                    console.log('wmsserver');
+                    console.log(resource.wms_server);
+                    if (resource.wms_server){
+                    //if (resource.url.startsWith(GEOSERVER_URL) || resource.url.startsWith(RASDAMAN_URL)){
                         console.log('PublicaMundi GEOSERVER/Rasdaman server');
                             var found = false;
                             $_.each(candidates, function(candidate, idx) {
@@ -376,9 +392,6 @@ this.ckan.module('olpreview2', function (jQuery, _)
                             bboxfloat = ret_dict['bbox'];
                             crs = ret_dict['crs'];
                         }
-                        console.log('bbox');
-                        console.log(bboxfloat);
-                        console.log(crs);
                         
                         var visibility = false;
                         
@@ -518,6 +531,10 @@ this.ckan.module('olpreview2', function (jQuery, _)
     String.prototype.startsWith = function(str){
         return this.indexOf(str) == 0;
     }
+
+    String.prototype.contains = function(str){
+        return this.indexOf(str) > -1;
+    }
     var extractBbox = function (bbox) {
         var bboxtemp= null;
         var crs = null;
@@ -593,8 +610,6 @@ this.ckan.module('olpreview2', function (jQuery, _)
        // },
 
         initialize: function () {
-            console.log('lola this is a');
-            console.log(this);
             jQuery.proxyAll(this, /_on/);
 
             this.el.ready(this._onReady);
@@ -654,8 +669,6 @@ this.ckan.module('olpreview2', function (jQuery, _)
                $(document.getElementById('map-ol')).click(function() {
                     $(document.getElementById('popup')).popover('destroy');
             });
-            console.log('prel resource');
-            console.log(preload_resource);
             withLayers(preload_resource, $_.bind(this.addLayer, this))
         }
     }
