@@ -3,8 +3,8 @@ var $_ = _ // keep pointer to underscore, as '_' will be overridden by a closure
 this.ckan.module('olpreview2', function (jQuery, _) 
 {
     var proxy = false;
-    var GEOSERVER_URL = "/geoserver";
-    var RASDAMAN_URL = "/rasdaman/ows/wms13"; 
+    //var GEOSERVER_URL = "/geoserver";
+    //var RASDAMAN_URL = "/rasdaman/ows/wms13"; 
     var KTIMA_URL = "http://gis.ktimanet.gr/wms";
     
 
@@ -12,6 +12,12 @@ this.ckan.module('olpreview2', function (jQuery, _)
     {
          // The input URL is supposed to be in it's canonical form, i.e. it should be a valid 
          // GetCapabilities WFS request.
+        
+         // if url is not on the same domain, proxy is used, so GetCapabilities parameters need to be added
+        if (!resource.on_same_domain && resource.proxy_url){
+            url += '?service=WFS&request=GetCapabilities';
+        }
+
          $.ajax({
                 type: "GET",
                 url: url,
@@ -118,8 +124,6 @@ this.ckan.module('olpreview2', function (jQuery, _)
 
     var withFeatureTypesLayers = function (resource, layerProcessor) 
     {
-        console.log('wfs');
-        console.log(resource);
         
         var parsed_url = resource.url.split('#')
         var url_body = parsed_url[0].split('?')[0] // remove query if any
@@ -142,7 +146,7 @@ this.ckan.module('olpreview2', function (jQuery, _)
                         name = candidate["wfs:Name"]["#text"];
                     }
                     else{
-                        alert("Layer has no name attribute. Cannot display");
+                        console.log("Layer has no name attribute. Cannot display");
                         return false;
                     }
                         
@@ -223,7 +227,10 @@ this.ckan.module('olpreview2', function (jQuery, _)
        
         //TODO: implement without using ol.format (see WFS parsing)
         var parser = new ol.format.WMSCapabilities();
-        
+        // if url is not on the same domain, proxy is used, so GetCapabilities parameters need to be added
+        if (!resource.on_same_domain && resource.proxy_url){
+            url += '?service=WMS&request=GetCapabilities';
+        }
         // The input URL is supposed to be in it's canonical form, i.e. it should be a valid 
         // GetCapabilities WMS request.
         $.ajax({
@@ -296,7 +303,8 @@ this.ckan.module('olpreview2', function (jQuery, _)
                     var zoomin=false;
 
                     //if (resource.url.startsWith(RASDAMAN_URL)){
-                    if (resource.url.contains(RASDAMAN_URL)){
+                    //if (resource.url.contains(RASDAMAN_URL)){
+                    if (resource.rasterstorer_resource && resource.wms_server){
                         zoomin = true;
                     }
 
