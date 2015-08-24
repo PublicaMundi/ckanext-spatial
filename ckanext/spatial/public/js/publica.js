@@ -84,7 +84,10 @@ this.ckan.module('olpreview2', function (jQuery, _)
 
 
                     // In case the url shows to our geoserver look for the specific resource layer name (publicamundi:xxxxx)
-                    if (resource.url.startsWith(GEOSERVER_URL)){
+                    console.log('wfsserver');
+                    console.log(resource.wfs_server);
+                    if (resource.wfs_server){
+                    //if (resource.url.startsWith(GEOSERVER_URL)){
                         console.log('PublicaMundi GEOSERVER');
                             var found = false;
                             $_.each(candidates, function(candidate, idx) {
@@ -292,10 +295,15 @@ this.ckan.module('olpreview2', function (jQuery, _)
                     }
                     var zoomin=false;
 
-                    if (resource.url.startsWith(RASDAMAN_URL)){
+                    //if (resource.url.startsWith(RASDAMAN_URL)){
+                    if (resource.url.contains(RASDAMAN_URL)){
                         zoomin = true;
                     }
-                    if (resource.url.startsWith(GEOSERVER_URL) || resource.url.startsWith(RASDAMAN_URL)){
+
+                    console.log('wmsserver');
+                    console.log(resource.wms_server);
+                    if (resource.wms_server){
+                    //if (resource.url.startsWith(GEOSERVER_URL) || resource.url.startsWith(RASDAMAN_URL)){
                         console.log('PublicaMundi GEOSERVER/Rasdaman server');
                             var found = false;
                             $_.each(candidates, function(candidate, idx) {
@@ -376,9 +384,6 @@ this.ckan.module('olpreview2', function (jQuery, _)
                             bboxfloat = ret_dict['bbox'];
                             crs = ret_dict['crs'];
                         }
-                        console.log('bbox');
-                        console.log(bboxfloat);
-                        console.log(crs);
                         
                         var visibility = false;
                         
@@ -518,6 +523,10 @@ this.ckan.module('olpreview2', function (jQuery, _)
     String.prototype.startsWith = function(str){
         return this.indexOf(str) == 0;
     }
+
+    String.prototype.contains = function(str){
+        return this.indexOf(str) > -1;
+    }
     var extractBbox = function (bbox) {
         var bboxtemp= null;
         var crs = null;
@@ -593,8 +602,6 @@ this.ckan.module('olpreview2', function (jQuery, _)
        // },
 
         initialize: function () {
-            console.log('lola this is a');
-            console.log(this);
             jQuery.proxyAll(this, /_on/);
 
             this.el.ready(this._onReady);
@@ -654,8 +661,6 @@ this.ckan.module('olpreview2', function (jQuery, _)
                $(document.getElementById('map-ol')).click(function() {
                     $(document.getElementById('popup')).popover('destroy');
             });
-            console.log('prel resource');
-            console.log(preload_resource);
             withLayers(preload_resource, $_.bind(this.addLayer, this))
         }
     }
