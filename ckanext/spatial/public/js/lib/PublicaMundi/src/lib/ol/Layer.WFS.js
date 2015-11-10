@@ -23,7 +23,13 @@
             this._map = null;
             this._type = null;
             var version = options.params.version ? '&version=' + options.params.version : '';
-            var maxFeatures = options.params.maxFeatures ? '&maxFeatures='+options.params.maxFeatures : '';
+            var maxFeatures = '' ; 
+            if (options.params.version === '2.0.0'){
+                maxFeatures = '&count='+options.params.maxFeatures;
+            }
+            else{
+                maxFeatures = '&maxFeatures='+options.params.maxFeatures;
+            }
             
             
             // Set JSON as preferable transfer format

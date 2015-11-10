@@ -6,7 +6,7 @@ this.ckan.module('olpreview2', function (jQuery, _)
     //var GEOSERVER_URL = "/geoserver";
     //var RASDAMAN_URL = "/rasdaman/ows/wms13"; 
     var KTIMA_URL = "http://gis.ktimanet.gr/wms";
-    var MAX_FEATURES = 500;    
+    var MAX_FEATURES = 300;    
 
     var parseWFSCapas = function(resource, url, callback, failCallback) 
     {
