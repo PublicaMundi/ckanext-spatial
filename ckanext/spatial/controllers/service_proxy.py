@@ -19,9 +19,15 @@ def proxy_service(req, context, data_dict):
     If the headers to not contain a content length (if it is a chinked
     response), we only transfer as long as the transferred data is less
     than the maximum file size. '''
+    
     resource_id = data_dict['resource_id']
     log.info('Proxify resource {id}'.format(id=resource_id))
-    resource = logic.get_action('resource_show')(context, {'id': resource_id})
+    
+    try:
+        resource = logic.get_action('resource_show')(context, {'id': resource_id})
+    except logic.NotFound:
+        base.abort(404, detail='No resource identified with {id}'.format(id=resource_id))
+
     url = resource['url']
 
     # If any case where params are needed arises, use 'ignore_params' parameter
