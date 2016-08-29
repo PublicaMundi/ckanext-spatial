@@ -642,8 +642,12 @@ this.ckan.module('olpreview2', function (jQuery, _)
             }
             var baseLayers = [{
                         title: 'Open Street Maps',
-                        type: PublicaMundi.LayerType.TILE,
-                        url: 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                        type: PublicaMundi.LayerType.WMS,
+                        url: 'http://aiolos.survey.ntua.gr/mapproxy/service',
+                        params:{
+                            'layers':'osm',
+                            'tiled':'true'
+                        },
             }];
 
             var options = {
